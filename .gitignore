@@ -1,0 +1,20 @@
+# Ignore all files by default, but scan all directories
+*
+!*/
+
+# Don't ignore
+!.gitignore
+!.gitmodules
+!*.js
+!*.json
+!*.md
+!*.sh
+!*.ts
+!*.yml
+!Dockerfile
+!eslint-config
+!yarn.lock
+
+# Always ignore
+node_modules
+.env
