@@ -39,13 +39,17 @@ const payloadInfo = (payload: Buffer, type: string) => {
 };
 
 const readPackets = new MagicByteLengthParser();
-const writePackets = new MagicByteLengthParser();
+// const writePackets = new MagicByteLengthParser();
 
 const pushFn = (type: PayloadType) => (payload: Buffer) => payloadInfo(payload, type);
 
 const handlePayload = (type: PayloadType, str: string) => {
   const payload = Buffer.from(str.replaceAll(':', ''), 'hex');
-  (type === 'Sent' ? writePackets : readPackets).transform(payload, pushFn(type));
+  if (type === 'Received') {
+    readPackets.transform(payload, pushFn('Received'));
+  } else {
+    payloadInfo(payload, type);
+  }
 };
 
 writeFileSync(file, '[');
