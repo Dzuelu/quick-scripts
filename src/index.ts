@@ -1,7 +1,7 @@
 /* eslint-disable sort-keys-fix/sort-keys-fix */
 /* eslint-disable no-underscore-dangle */
 import { COMMANDS } from 'commands';
-import packets from './packets.json';
+import packets from './packets2.json';
 import { appendFileSync, writeFileSync } from 'fs';
 import { MagicByteLengthParser } from 'magicByteLengthParser';
 
@@ -55,10 +55,10 @@ const handlePayload = (type: PayloadType, str: string) => {
 writeFileSync(file, '[');
 packets.map(packet => {
   const { usbcom } = packet._source.layers;
-  if (usbcom['usbcom.data.out_payload']) {
+  if (usbcom?.['usbcom.data.out_payload']) {
     handlePayload('Sent', usbcom['usbcom.data.out_payload']);
   }
-  if (usbcom['usbcom.data.in_payload']) {
+  if (usbcom?.['usbcom.data.in_payload']) {
     handlePayload('Received', usbcom['usbcom.data.in_payload']);
   }
   return null;
