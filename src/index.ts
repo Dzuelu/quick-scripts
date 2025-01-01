@@ -3,45 +3,59 @@
 import { COMMANDS } from 'commands';
 import packets from './packets.json';
 import { appendFileSync, writeFileSync } from 'fs';
+import { MagicByteLengthParser } from 'magicByteLengthParser';
 
-const file = 'just-packets.json';
+type PayloadType = 'Sent' | 'Received';
+
+// const file = 'just-packets.json';
+const file = 'magic-packets.json';
 let isFirstLine = true;
 
-function hex2a(hexx: string | number) {
-  const hex = hexx.toString(); // force conversion
-  let str = '';
-  for (let i = 0; i < hex.length; i += 2) str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-  return str;
-}
+// function hex2a(hexx: number): string {
+//   const hex = hexx.toString(); // force conversion
+//   let str = '';
+//   for (let i = 0; i < hex.length; i += 2) str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+//   return str;
+// }
 
-const payloadInfo = (payload: string, type: string) => {
+const payloadInfo = (payload: Buffer, type: string) => {
   if (isFirstLine) {
     isFirstLine = false;
   } else {
     appendFileSync(file, ',');
   }
 
-  const command = parseInt(payload.split(':')[1], 16);
+  const command = payload[1];
   appendFileSync(
     file,
     JSON.stringify({
       type,
       command,
       commandName: Object.entries(COMMANDS).find(([, commandHex]) => command === commandHex)?.[0] ?? 'Unknown',
-      payload,
-      parsed: payload.split(':').map(hex2a).join('')
+      payload: payload.join(':'),
+      parsed: payload.toString('utf-8')
     })
   );
+};
+
+const readPackets = new MagicByteLengthParser();
+const writePackets = new MagicByteLengthParser();
+
+const pushFn = (type: PayloadType) => (payload: Buffer) => payloadInfo(payload, type);
+
+const handlePayload = (type: PayloadType, str: string) => {
+  const payload = Buffer.from(str.replaceAll(':', ''), 'hex');
+  (type === 'Sent' ? writePackets : readPackets).transform(payload, pushFn(type));
 };
 
 writeFileSync(file, '[');
 packets.map(packet => {
   const { usbcom } = packet._source.layers;
   if (usbcom['usbcom.data.out_payload']) {
-    payloadInfo(usbcom['usbcom.data.out_payload'], 'Sent');
+    handlePayload('Sent', usbcom['usbcom.data.out_payload']);
   }
   if (usbcom['usbcom.data.in_payload']) {
-    payloadInfo(usbcom['usbcom.data.in_payload'], 'Received');
+    handlePayload('Received', usbcom['usbcom.data.in_payload']);
   }
   return null;
 });
